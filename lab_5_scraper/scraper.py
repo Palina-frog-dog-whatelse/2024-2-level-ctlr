@@ -31,8 +31,7 @@ from core_utils.article.article import Article
 from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
 
 # ──────────────────────────────────────────────────────────────────────────
-# Добавляем путь к родительской директории проекта, чтобы imports
-# core_utils работали
+# Добавляем путь к родительской директории проекта, чтобы imports core_utils работали
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -41,49 +40,42 @@ if str(PROJECT_ROOT) not in sys.path:
 
 class IncorrectSeedURLError(Exception):
     """Ошибка: seed_urls должны быть списком строк (валидных URL)."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
     """Ошибка: указано слишком большое количество статей (превышает лимит)."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class IncorrectNumberOfArticlesError(Exception):
     """Ошибка: total_articles_to_find_and_parse должен быть положительным int."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class IncorrectHeadersError(Exception):
     """Ошибка: headers должен быть словарём строк."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class IncorrectEncodingError(Exception):
     """Ошибка: encoding должен быть строкой."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class IncorrectTimeoutError(Exception):
     """Ошибка: timeout должен быть int от 0 до 60."""
-
     # pylint: disable=unnecessary-pass
     pass
 
 
 class IncorrectVerifyError(Exception):
     """Ошибка: should_verify_certificate и headless_mode должны быть bool."""
-
     # pylint: disable=unnecessary-pass
     pass
 
@@ -128,16 +120,16 @@ class Config:
 
     def _load_and_set_attributes(self) -> None:
         """Читает JSON и сохраняет поля в приватных атрибутах."""
-        with open(self.path_to_config, "r", encoding="utf-8") as f:
+        with open(self.path_to_config, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        self._seed_urls = data["seed_urls"]
-        self._num_articles = data["total_articles_to_find_and_parse"]
-        self._headers = data["headers"]
-        self._encoding = data["encoding"]
-        self._timeout = data["timeout"]
-        self._should_verify_certificate = data["should_verify_certificate"]
-        self._headless_mode = data["headless_mode"]
+        self._seed_urls = data['seed_urls']
+        self._num_articles = data['total_articles_to_find_and_parse']
+        self._headers = data['headers']
+        self._encoding = data['encoding']
+        self._timeout = data['timeout']
+        self._should_verify_certificate = data['should_verify_certificate']
+        self._headless_mode = data['headless_mode']
 
     def _validate_config_content(self) -> None:
         """
@@ -150,48 +142,46 @@ class Config:
           6) should_verify_certificate — bool.
           7) headless_mode — bool.
         """
-        with open(self.path_to_config, "r", encoding="utf-8") as f:
+        with open(self.path_to_config, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        seed_urls = data.get("seed_urls")
+        seed_urls = data.get('seed_urls')
         if not isinstance(seed_urls, list):
-            raise IncorrectSeedURLError("Seed URLs must be a list of strings.")
+            raise IncorrectSeedURLError('Seed URLs must be a list of strings.')
         for url in seed_urls:
-            if not isinstance(url, str) or not re.match(r"https?://(www\.)?[\w\.-]+\.\w+", url):
-                raise IncorrectSeedURLError("Each seed URL must be valid.")
+            if not isinstance(url, str) or not re.match(
+                    r'https?://(www\.)?[\w\.-]+\.\w+', url):
+                raise IncorrectSeedURLError('Each seed URL must be valid.')
 
-        total = data.get("total_articles_to_find_and_parse")
+        total = data.get('total_articles_to_find_and_parse')
         if not isinstance(total, int) or total <= 0:
-            raise IncorrectNumberOfArticlesError("Num articles must be a positive integer.")
+            raise IncorrectNumberOfArticlesError('Num articles must be a positive integer.')
         max_limit = 1000
         if total > max_limit:
-            raise NumberOfArticlesOutOfRangeError("Num articles must not be too large.")
+            raise NumberOfArticlesOutOfRangeError('Num articles must not be too large.')
 
-        headers = data.get("headers")
+        headers = data.get('headers')
         if not isinstance(headers, dict):
-            raise IncorrectHeadersError("Headers must be a dictionary with string keys and values.")
+            raise IncorrectHeadersError('Headers must be a dictionary with string keys and values.')
 
-        encoding = data.get("encoding")
+        encoding = data.get('encoding')
         if not isinstance(encoding, str):
-            raise IncorrectEncodingError("Encoding must be a string.")
+            raise IncorrectEncodingError('Encoding must be a string.')
 
-        timeout = data.get("timeout")
+        timeout = data.get('timeout')
         timeout_lower_limit = 0
         timeout_upper_limit = 60
-        if (
-            not isinstance(timeout, int)
-            or timeout < timeout_lower_limit
-            or timeout > timeout_upper_limit
-        ):
-            raise IncorrectTimeoutError("Timeout must be integer between 0 and 60.")
+        if not isinstance(timeout, int) or timeout < timeout_lower_limit \
+           or timeout > timeout_upper_limit:
+            raise IncorrectTimeoutError('Timeout must be integer between 0 and 60.')
 
-        verify = data.get("should_verify_certificate")
+        verify = data.get('should_verify_certificate')
         if not isinstance(verify, bool):
-            raise IncorrectVerifyError("Verify certificate must be either True or False.")
+            raise IncorrectVerifyError('Verify certificate must be either True or False.')
 
-        headless = data.get("headless_mode")
+        headless = data.get('headless_mode')
         if not isinstance(headless, bool):
-            raise IncorrectVerifyError("Headless mode must be either True or False.")
+            raise IncorrectVerifyError('Headless mode must be either True or False.')
 
     def get_seed_urls(self) -> list[str]:
         """Возвращает список seed_urls."""
@@ -228,13 +218,15 @@ def make_request(url: str, config: Config) -> requests.Response:
     После получения сразу присваивает resp.encoding = config.get_encoding().
     Добавляет паузу 1 сек., чтобы не перегружать сервер.
     """
-
-    resp = requests.get(
-        url,
-        headers=config.get_headers(),
-        timeout=config.get_timeout(),
-        verify=config.get_verify_certificate(),
-    )
+    try:
+        resp = requests.get(
+            url,
+            headers=config.get_headers(),
+            timeout=config.get_timeout(),
+            verify=config.get_verify_certificate()
+        )
+    except ValueError as e:
+        raise ValueError(f"Failed to fetch {url}: {e}") from e
 
     resp.encoding = config.get_encoding()
     time.sleep(1)
@@ -254,7 +246,7 @@ class Crawler:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.urls: list[str] = []
-        self.url_pattern = re.compile(r"/news-\d+-\d+\.html")
+        self.url_pattern = re.compile(r'/news-\d+-\d+\.html')
 
     def find_articles(self) -> None:
         """
@@ -279,11 +271,11 @@ class Crawler:
             if response.status_code != 200:
                 continue
 
-            soup = BeautifulSoup(response.text, "html.parser")
-            found = soup.find_all("a", href=self.url_pattern)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            found = soup.find_all('a', href=self.url_pattern)
 
             for a_tag in found:
-                href = a_tag.get("href", "").strip()
+                href = a_tag.get('href', '').strip()
                 if not href:
                     continue
                 full_url = urljoin(seed_url, href)
@@ -325,24 +317,16 @@ class HTMLParser:
         Преобразует дату из "YYYY-MM-DD" или "28 февраля 2024 года"
         в строку "YYYY-MM-DD". При неудаче — None.
         """
-        if re.match(r"\d{4}-\d{2}-\d{2}", date_str):
+        if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
             return date_str
 
         months_map = {
-            "января": "01",
-            "февраля": "02",
-            "марта": "03",
-            "апреля": "04",
-            "мая": "05",
-            "июня": "06",
-            "июля": "07",
-            "августа": "08",
-            "сентября": "09",
-            "октября": "10",
-            "ноября": "11",
-            "декабря": "12",
+            'января': '01', 'февраля': '02', 'марта': '03',
+            'апреля': '04', 'мая': '05', 'июня': '06',
+            'июля': '07', 'августа': '08', 'сентября': '09',
+            'октября': '10', 'ноября': '11', 'декабря': '12'
         }
-        cleaned = date_str.replace("года", "").strip()
+        cleaned = date_str.replace('года', '').strip()
         parts = cleaned.split()
         if len(parts) >= 3:
             day = parts[0].zfill(2)
@@ -350,7 +334,49 @@ class HTMLParser:
             month = months_map.get(month_ru)
             year = parts[2] if parts[2].isdigit() else None
             if month and year:
-                return f"{year}-{month}-{day}"
+                return f'{year}-{month}-{day}'
+        return None
+
+    class HTMLParser:
+        """
+    Парсер одной статьи. При инициализации создаёт Article(url, article_id),
+    чтобы тест “test_html_parser_instantiation” прошёл.
+
+    parse() делает GET-страницу, парсит заголовок/дату/автора/текст/темы,
+    а потом сохраняет два файла в ASSETS_PATH:
+      - {article_id}_raw.txt    (текст > 50 символов)
+      - {article_id}_meta.json   (JSON-метаданные)
+        """
+
+    def __init__(self, full_url: str, article_id: int, config: Config) -> None:
+        self.full_url = full_url
+        self.article_id = article_id
+        self.config = config
+        self.article = Article(url=self.full_url, article_id=self.article_id)
+
+    def _unify_date(self, date_str: str) -> Union[str, None]:
+        """
+        Преобразует дату из "YYYY-MM-DD" или "28 февраля 2024 года"
+        в строку "YYYY-MM-DD". При неудаче — None.
+        """
+        if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
+            return date_str
+
+        months_map = {
+            'января': '01', 'февраля': '02', 'марта': '03',
+            'апреля': '04', 'мая': '05', 'июня': '06',
+            'июля': '07', 'августа': '08', 'сентября': '09',
+            'октября': '10', 'ноября': '11', 'декабря': '12'
+        }
+        cleaned = date_str.replace('года', '').strip()
+        parts = cleaned.split()
+        if len(parts) >= 3:
+            day = parts[0].zfill(2)
+            month_ru = parts[1].lower()
+            month = months_map.get(month_ru)
+            year = parts[2] if parts[2].isdigit() else None
+            if month and year:
+                return f'{year}-{month}-{day}'
         return None
 
     def parse(self) -> Union[Article, bool]:
@@ -375,84 +401,87 @@ class HTMLParser:
         try:
             response = make_request(self.full_url, self.config)
         except requests.RequestException:
-            # pylint: disable=broad-exception-caught
             return False
 
         if response.status_code != 200:
             return False
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 1) Заголовок
-        title_tag = soup.select_one("h1.title, h1.entry-title")
-        if title_tag:
-            title_text = title_tag.get_text(strip=True)
-        else:
-            title_text = soup.title.get_text(strip=True) if soup.title else ""
-        self.article.title = title_text or "Заголовок не найден"
+        self._parse_title(soup)
+        self._parse_date(soup)
+        self._parse_author(soup)
+        self._parse_topics(soup)
+        self._parse_text(soup)
+        self._save_artifacts()
 
-        # 2) Дата
-        date_tag = soup.select_one(".date, .news-date, time")
-        if date_tag:
-            unified = self._unify_date(date_tag.get_text(strip=True))
-            if unified:
-                try:
-                    # type: ignore[arg-type]
-                    self.article.date = datetime.strptime(unified, "%Y-%m-%d")
-                except requests.RequestException:
-                    # pylint: disable=broad-exception-caught
-                    self.article.date = datetime.now()
-            else:
+        return self.article
+
+    def _parse_title(self, soup: BeautifulSoup) -> None:
+        """Парсит заголовок статьи."""
+        title_tag = soup.select_one('h1.title, h1.entry-title')
+        title_text = title_tag.get_text(strip=True) if title_tag else (
+            soup.title.get_text(strip=True) if soup.title else ''
+        )
+        self.article.title = title_text or 'Заголовок не найден'
+
+    def _parse_date(self, soup: BeautifulSoup) -> None:
+        """Парсит дату статьи."""
+        date_tag = soup.select_one('.date, .news-date, time')
+        unified = self._unify_date(date_tag.get_text(strip=True)) if date_tag else None
+        if unified:
+            try:
+                self.article.date = datetime.strptime(unified, '%Y-%m-%d')
+            except ValueError:
                 self.article.date = datetime.now()
         else:
             self.article.date = datetime.now()
 
-        # 3) Автор
-        author_tag = soup.select_one(".author, .written-by")
+    def _parse_author(self, soup: BeautifulSoup) -> None:
+        """Парсит автора статьи."""
+        author_tag = soup.select_one('.author, .written-by')
         author_list = [author_tag.get_text(strip=True)] if author_tag else []
-        self.article.author = author_list or ["NOT FOUND"]
+        self.article.author = author_list or ['NOT FOUND']
 
-        # 4) Темы
-        tags = soup.select(".tags a, .keywords a")
+    def _parse_topics(self, soup: BeautifulSoup) -> None:
+        """Парсит темы статьи."""
+        tags = soup.select('.tags a, .keywords a')
         self.article.topics = [t.get_text(strip=True) for t in tags] if tags else []
 
-        # 5) Основной текст
-        content = soup.select_one(".article-text, .content, .news-text, #content")
+    def _parse_text(self, soup: BeautifulSoup) -> None:
+        """Парсит основной текст статьи."""
+        content = soup.select_one('.article-text, .content, .news-text, #content')
         if content:
-            for bad in content.select("script, .ad, .related, .comments"):
+            for bad in content.select('script, .ad, .related, .comments'):
                 bad.decompose()
-            paras = [p.get_text(strip=True) for p in content.select("p") if p.get_text(strip=True)]
-            combined = "\n".join(paras) if paras else ""
-            if len(combined) > 50:
-                self.article.text = combined
-            else:
-                self.article.text = "Текст отсутствует. " * 5
+            paras = [
+                p.get_text(strip=True)
+                for p in content.select('p')
+                if p.get_text(strip=True)
+            ]
+            combined = '\n'.join(paras) if paras else ''
+            self.article.text = combined if len(combined) > 50 else 'Текст отсутствует. ' * 5
         else:
-            self.article.text = "Текст отсутствует. " * 5
+            self.article.text = 'Текст отсутствует. ' * 5
 
-        # ────────────────────────────────────────────────────────────────
-        # Сохраняем raw-текст
-        raw_path = ASSETS_PATH / f"{self.article.article_id}_raw.txt"
+    def _save_artifacts(self) -> None:
+        """Сохраняет raw-текст и метаданные статьи."""
+        raw_path = ASSETS_PATH / f'{self.article.article_id}_raw.txt'
         raw_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(raw_path, "w", encoding="utf-8") as f_raw:
+        with open(raw_path, 'w', encoding='utf-8') as f_raw:
             f_raw.write(self.article.text)
 
-        # Сохраняем метаданные
         meta_data = {
-            "id": self.article.article_id,
-            "url": self.article.url,
-            "title": self.article.title,
-            "date": self.article.date.strftime("%Y-%m-%d %H:%M:%S"),
-            "author": self.article.author,
-            "topics": self.article.topics,
+            'id': self.article.article_id,
+            'url': self.article.url,
+            'title': self.article.title,
+            'date': self.article.date.strftime('%Y-%m-%d %H:%M:%S'),
+            'author': self.article.author,
+            'topics': self.article.topics
         }
-        meta_path = ASSETS_PATH / f"{self.article.article_id}_meta.json"
-        with open(meta_path, "w", encoding="utf-8") as f_meta:
+        meta_path = ASSETS_PATH / f'{self.article.article_id}_meta.json'
+        with open(meta_path, 'w', encoding='utf-8') as f_meta:
             json.dump(meta_data, f_meta, ensure_ascii=False, indent=2)
-        # ────────────────────────────────────────────────────────────────
-
-        return self.article
-
 
 def prepare_environment(base_path: Union[Path, str]) -> None:
     """
@@ -471,10 +500,10 @@ def main() -> None:
     crawler = Crawler(config=configuration)
     crawler.find_articles()
 
-    for idx, link in enumerate(crawler.urls[: configuration.get_num_articles()], start=1):
+    for idx, link in enumerate(crawler.urls[:configuration.get_num_articles()], start=1):
         parser = HTMLParser(full_url=link, article_id=idx, config=configuration)
         parser.parse()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
