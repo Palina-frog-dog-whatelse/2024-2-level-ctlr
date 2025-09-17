@@ -337,48 +337,6 @@ class HTMLParser:
                 return f'{year}-{month}-{day}'
         return None
 
-    class HTMLParser:
-        """
-    Парсер одной статьи. При инициализации создаёт Article(url, article_id),
-    чтобы тест “test_html_parser_instantiation” прошёл.
-
-    parse() делает GET-страницу, парсит заголовок/дату/автора/текст/темы,
-    а потом сохраняет два файла в ASSETS_PATH:
-      - {article_id}_raw.txt    (текст > 50 символов)
-      - {article_id}_meta.json   (JSON-метаданные)
-        """
-
-    def __init__(self, full_url: str, article_id: int, config: Config) -> None:
-        self.full_url = full_url
-        self.article_id = article_id
-        self.config = config
-        self.article = Article(url=self.full_url, article_id=self.article_id)
-
-    def _unify_date(self, date_str: str) -> Union[str, None]:
-        """
-        Преобразует дату из "YYYY-MM-DD" или "28 февраля 2024 года"
-        в строку "YYYY-MM-DD". При неудаче — None.
-        """
-        if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
-            return date_str
-
-        months_map = {
-            'января': '01', 'февраля': '02', 'марта': '03',
-            'апреля': '04', 'мая': '05', 'июня': '06',
-            'июля': '07', 'августа': '08', 'сентября': '09',
-            'октября': '10', 'ноября': '11', 'декабря': '12'
-        }
-        cleaned = date_str.replace('года', '').strip()
-        parts = cleaned.split()
-        if len(parts) >= 3:
-            day = parts[0].zfill(2)
-            month_ru = parts[1].lower()
-            month = months_map.get(month_ru)
-            year = parts[2] if parts[2].isdigit() else None
-            if month and year:
-                return f'{year}-{month}-{day}'
-        return None
-
     def parse(self) -> Union[Article, bool]:
         """
         Делает GET self.full_url через make_request(...).
