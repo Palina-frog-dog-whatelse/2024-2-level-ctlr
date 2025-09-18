@@ -29,14 +29,14 @@ from bs4 import BeautifulSoup
 
 from core_utils.article import io
 from core_utils.article.article import Article
+from core_utils.config_dto import ConfigDTO
 from core_utils.constants import (
     ASSETS_PATH,
     CRAWLER_CONFIG_PATH,
     NUM_ARTICLES_UPPER_LIMIT,
     TIMEOUT_LOWER_LIMIT,
     TIMEOUT_UPPER_LIMIT,
-    )
-from core_utils.config_dto import ConfigDTO
+)
 
 # ──────────────────────────────────────────────────────────────────────────
 # Добавляем путь к родительской директории проекта, чтобы imports core_utils работали
@@ -281,7 +281,7 @@ class Crawler:
             found = soup.find_all('a', href=self.url_pattern)
             for a_tag in found:
                 href = a_tag.get('href', '').strip()
-                if not href or not re.match('.*news-\d+-\d+\.html', a_tag['href']):
+                if not href :
                     continue
                 a_soup = BeautifulSoup(str(a_tag), 'html.parser')
                 full_url = urljoin(seed_url, self._extract_url(a_soup))
