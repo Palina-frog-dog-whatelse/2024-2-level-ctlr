@@ -298,6 +298,8 @@ class Crawler:
 
     def _extract_url(self, article_bs: BeautifulSoup) -> str:
         href_extracted = article_bs.a.get('href')
+        if not isinstance(href_extracted, str):
+            raise ValueError("The HREF must be a string")
         return href_extracted
 
     def get_search_urls(self) -> list[str]:
@@ -347,8 +349,10 @@ class HTMLParser:
 
         Возвращает заполненный Article.
         """
+        if not isinstance(self.article.url, str):
+            raise ValueError("The URL must be a string")
         try:
-            response = make_request(self.article.url, self.config)
+                        response = make_request(self.article.url, self.config)
         except requests.RequestException:
             return False
 
@@ -414,6 +418,8 @@ def main() -> None:
     for idx, link in enumerate(crawler.urls[:configuration.get_num_articles()], start=1):
         parser = HTMLParser(full_url=link, article_id=idx, config=configuration)
         article = parser.parse()
+        if not isinstance(article, Article):
+            raise ValueError("Failed to create an article with the given data")
         io.to_raw(article)
         io.to_meta(article)
 
