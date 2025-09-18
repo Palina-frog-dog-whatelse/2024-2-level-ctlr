@@ -352,7 +352,7 @@ class HTMLParser:
         if not isinstance(self.article.url, str):
             raise ValueError("The URL must be a string")
         try:
-                        response = make_request(self.article.url, self.config)
+            response = make_request(self.article.url, self.config)
         except requests.RequestException:
             return False
 
