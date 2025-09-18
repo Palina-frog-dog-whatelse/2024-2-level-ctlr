@@ -21,7 +21,7 @@ class ConfigDTO:
         headless_mode: bool
     ) -> None:
         self.seed_urls = seed_urls
-        self.total_articles_to_find_and_parse = total_articles_to_find_and_parse
+        self.total_articles = total_articles_to_find_and_parse
         self.headers = headers
         self.encoding = encoding
         self.timeout = timeout

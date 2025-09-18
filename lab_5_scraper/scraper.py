@@ -27,8 +27,16 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from core_utils.article import io
 from core_utils.article.article import Article
-from core_utils.constants import ASSETS_PATH, CRAWLER_CONFIG_PATH
+from core_utils.constants import (
+    ASSETS_PATH,
+    CRAWLER_CONFIG_PATH,
+    NUM_ARTICLES_UPPER_LIMIT,
+    TIMEOUT_LOWER_LIMIT,
+    TIMEOUT_UPPER_LIMIT,
+    )
+from core_utils.config_dto import ConfigDTO
 
 # ──────────────────────────────────────────────────────────────────────────
 # Добавляем путь к родительской директории проекта, чтобы imports core_utils работали
@@ -115,21 +123,23 @@ class Config:
 
     def __init__(self, path_to_config: Path) -> None:
         self.path_to_config = path_to_config
+        self.config_dto = self._extract_config_content()
         self._validate_config_content()
-        self._load_and_set_attributes()
 
-    def _load_and_set_attributes(self) -> None:
+        self._seed_urls = self.config_dto.seed_urls
+        self._num_articles = self.config_dto.total_articles
+        self._headers = self.config_dto.headers
+        self._encoding = self.config_dto.encoding
+        self._timeout = self.config_dto.timeout
+        self._should_verify_certificate = self.config_dto.should_verify_certificate
+        self._headless_mode = self.config_dto.headless_mode
+
+    def _extract_config_content(self) -> ConfigDTO:
         """Читает JSON и сохраняет поля в приватных атрибутах."""
         with open(self.path_to_config, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        self._seed_urls = data['seed_urls']
-        self._num_articles = data['total_articles_to_find_and_parse']
-        self._headers = data['headers']
-        self._encoding = data['encoding']
-        self._timeout = data['timeout']
-        self._should_verify_certificate = data['should_verify_certificate']
-        self._headless_mode = data['headless_mode']
+        return ConfigDTO(**data)
 
     def _validate_config_content(self) -> None:
         """
@@ -142,10 +152,8 @@ class Config:
           6) should_verify_certificate — bool.
           7) headless_mode — bool.
         """
-        with open(self.path_to_config, 'r', encoding='utf-8') as f:
-            data = json.load(f)
 
-        seed_urls = data.get('seed_urls')
+        seed_urls = self.config_dto.seed_urls
         if not isinstance(seed_urls, list):
             raise IncorrectSeedURLError('Seed URLs must be a list of strings.')
         for url in seed_urls:
@@ -153,33 +161,31 @@ class Config:
                     r'https?://(www\.)?[\w\.-]+\.\w+', url):
                 raise IncorrectSeedURLError('Each seed URL must be valid.')
 
-        total = data.get('total_articles_to_find_and_parse')
+        total = self.config_dto.total_articles
         if not isinstance(total, int) or total <= 0:
             raise IncorrectNumberOfArticlesError('Num articles must be a positive integer.')
-        max_limit = 1000
+        max_limit = NUM_ARTICLES_UPPER_LIMIT
         if total > max_limit:
             raise NumberOfArticlesOutOfRangeError('Num articles must not be too large.')
 
-        headers = data.get('headers')
+        headers = self.config_dto.headers
         if not isinstance(headers, dict):
             raise IncorrectHeadersError('Headers must be a dictionary with string keys and values.')
 
-        encoding = data.get('encoding')
+        encoding = self.config_dto.encoding
         if not isinstance(encoding, str):
             raise IncorrectEncodingError('Encoding must be a string.')
 
-        timeout = data.get('timeout')
-        timeout_lower_limit = 0
-        timeout_upper_limit = 60
-        if not isinstance(timeout, int) or timeout < timeout_lower_limit \
-           or timeout > timeout_upper_limit:
+        timeout = self.config_dto.timeout
+        if not isinstance(timeout, int) or timeout < TIMEOUT_LOWER_LIMIT \
+           or timeout > TIMEOUT_UPPER_LIMIT:
             raise IncorrectTimeoutError('Timeout must be integer between 0 and 60.')
 
-        verify = data.get('should_verify_certificate')
+        verify = self.config_dto.should_verify_certificate
         if not isinstance(verify, bool):
             raise IncorrectVerifyError('Verify certificate must be either True or False.')
 
-        headless = data.get('headless_mode')
+        headless = self.config_dto.headless_mode
         if not isinstance(headless, bool):
             raise IncorrectVerifyError('Headless mode must be either True or False.')
 
@@ -273,12 +279,12 @@ class Crawler:
 
             soup = BeautifulSoup(response.text, 'html.parser')
             found = soup.find_all('a', href=self.url_pattern)
-
             for a_tag in found:
                 href = a_tag.get('href', '').strip()
-                if not href:
+                if not href or not re.match('.*news-\d+-\d+\.html', a_tag['href']):
                     continue
-                full_url = urljoin(seed_url, href)
+                a_soup = BeautifulSoup(str(a_tag), 'html.parser')
+                full_url = urljoin(seed_url, self._extract_url(a_soup))
                 if full_url not in self.urls:
                     self.urls.append(full_url)
                 if len(self.urls) >= required:
@@ -289,6 +295,10 @@ class Crawler:
             last = self.urls[-1]
             while len(self.urls) < required:
                 self.urls.append(last)
+
+    def _extract_url(self, article_bs: BeautifulSoup) -> str:
+        href_extracted = article_bs.a.get('href')
+        return href_extracted
 
     def get_search_urls(self) -> list[str]:
         """Возвращает просто config.get_seed_urls() (требование теста)."""
@@ -312,30 +322,8 @@ class HTMLParser:
         self.config = config
         self.article = Article(url=self.full_url, article_id=self.article_id)
 
-    def _unify_date(self, date_str: str) -> Union[str, None]:
-        """
-        Преобразует дату из "YYYY-MM-DD" или "28 февраля 2024 года"
-        в строку "YYYY-MM-DD". При неудаче — None.
-        """
-        if re.match(r'\d{4}-\d{2}-\d{2}', date_str):
-            return date_str
-
-        months_map = {
-            'января': '01', 'февраля': '02', 'марта': '03',
-            'апреля': '04', 'мая': '05', 'июня': '06',
-            'июля': '07', 'августа': '08', 'сентября': '09',
-            'октября': '10', 'ноября': '11', 'декабря': '12'
-        }
-        cleaned = date_str.replace('года', '').strip()
-        parts = cleaned.split()
-        if len(parts) >= 3:
-            day = parts[0].zfill(2)
-            month_ru = parts[1].lower()
-            month = months_map.get(month_ru)
-            year = parts[2] if parts[2].isdigit() else None
-            if month and year:
-                return f'{year}-{month}-{day}'
-        return None
+    def unify_date_format(self, date_str: str) -> datetime:
+        return datetime.strptime(date_str, '%d.%m.%Y')
 
     def parse(self) -> Union[Article, bool]:
         """
@@ -357,7 +345,7 @@ class HTMLParser:
         Возвращает заполненный Article.
         """
         try:
-            response = make_request(self.full_url, self.config)
+            response = make_request(self.article.url, self.config)
         except requests.RequestException:
             return False
 
@@ -366,80 +354,42 @@ class HTMLParser:
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        self._parse_title(soup)
-        self._parse_date(soup)
-        self._parse_author(soup)
-        self._parse_topics(soup)
-        self._parse_text(soup)
-        self._save_artifacts()
+        self._fill_article_with_text(soup)
+        self._fill_article_with_meta_information(soup)
 
         return self.article
 
-    def _parse_title(self, soup: BeautifulSoup) -> None:
-        """Парсит заголовок статьи."""
-        title_tag = soup.select_one('h1.title, h1.entry-title')
-        title_text = title_tag.get_text(strip=True) if title_tag else (
-            soup.title.get_text(strip=True) if soup.title else ''
-        )
-        self.article.title = title_text or 'Заголовок не найден'
+    def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
+        """Парсит основной текст статьи."""
 
-    def _parse_date(self, soup: BeautifulSoup) -> None:
-        """Парсит дату статьи."""
-        date_tag = soup.select_one('.date, .news-date, time')
-        unified = self._unify_date(date_tag.get_text(strip=True)) if date_tag else None
-        if unified:
-            try:
-                self.article.date = datetime.strptime(unified, '%Y-%m-%d')
-            except ValueError:
-                self.article.date = datetime.now()
+        all_p_blocks = article_soup.find_all('p')
+        self.article.text = ' '.join(p_block.text for p_block in all_p_blocks)
+
+    def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
+        """Парсит мета-информацию о статье."""
+        title_tag = article_soup.find('h2')
+        if title_tag:
+            self.article.title = title_tag.text.strip()
+        else:
+            self.article.title = ''
+
+        date_tag = article_soup.find('div', class_='mndata')
+        if date_tag:
+            self.article.date = self.unify_date_format(date_tag.text.strip())
         else:
             self.article.date = datetime.now()
 
-    def _parse_author(self, soup: BeautifulSoup) -> None:
-        """Парсит автора статьи."""
-        author_tag = soup.select_one('.author, .written-by')
-        author_list = [author_tag.get_text(strip=True)] if author_tag else []
-        self.article.author = author_list or ['NOT FOUND']
+        author_tags = article_soup.find_all('p', align='right')
+        found_author = False
+        for author_tag in author_tags:
+            strong_tag = author_tag.find('strong')
+            if not strong_tag:
+                continue
+            self.article.author.append(strong_tag.text.strip())
+            found_author = True
+        if not found_author:
+            self.article.author.append('NOT FOUND')
 
-    def _parse_topics(self, soup: BeautifulSoup) -> None:
-        """Парсит темы статьи."""
-        tags = soup.select('.tags a, .keywords a')
-        self.article.topics = [t.get_text(strip=True) for t in tags] if tags else []
-
-    def _parse_text(self, soup: BeautifulSoup) -> None:
-        """Парсит основной текст статьи."""
-        content = soup.select_one('.article-text, .content, .news-text, #content')
-        if content:
-            for bad in content.select('script, .ad, .related, .comments'):
-                bad.decompose()
-            paras = [
-                p.get_text(strip=True)
-                for p in content.select('p')
-                if p.get_text(strip=True)
-            ]
-            combined = '\n'.join(paras) if paras else ''
-            self.article.text = combined if len(combined) > 50 else 'Текст отсутствует. ' * 5
-        else:
-            self.article.text = 'Текст отсутствует. ' * 5
-
-    def _save_artifacts(self) -> None:
-        """Сохраняет raw-текст и метаданные статьи."""
-        raw_path = ASSETS_PATH / f'{self.article.article_id}_raw.txt'
-        raw_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(raw_path, 'w', encoding='utf-8') as f_raw:
-            f_raw.write(self.article.text)
-
-        meta_data = {
-            'id': self.article.article_id,
-            'url': self.article.url,
-            'title': self.article.title,
-            'date': self.article.date.strftime('%Y-%m-%d %H:%M:%S'),
-            'author': self.article.author,
-            'topics': self.article.topics
-        }
-        meta_path = ASSETS_PATH / f'{self.article.article_id}_meta.json'
-        with open(meta_path, 'w', encoding='utf-8') as f_meta:
-            json.dump(meta_data, f_meta, ensure_ascii=False, indent=2)
 
 def prepare_environment(base_path: Union[Path, str]) -> None:
     """
@@ -460,7 +410,9 @@ def main() -> None:
 
     for idx, link in enumerate(crawler.urls[:configuration.get_num_articles()], start=1):
         parser = HTMLParser(full_url=link, article_id=idx, config=configuration)
-        parser.parse()
+        article = parser.parse()
+        io.to_raw(article)
+        io.to_meta(article)
 
 
 if __name__ == '__main__':
