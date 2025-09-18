@@ -323,6 +323,9 @@ class HTMLParser:
         self.article = Article(url=self.full_url, article_id=self.article_id)
 
     def unify_date_format(self, date_str: str) -> datetime:
+        """
+        Приводит дату и время создания статьи к единому формату.
+        """
         return datetime.strptime(date_str, '%d.%m.%Y')
 
     def parse(self) -> Union[Article, bool]:
