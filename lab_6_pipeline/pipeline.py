@@ -3,9 +3,7 @@ Pipeline for CONLL-U formatting.
 """
 
 # pylint: disable=too-few-public-methods, undefined-variable, too-many-nested-blocks
-import json
 import pathlib
-from typing import cast
 
 import spacy_udpipe
 from networkx import DiGraph
@@ -24,7 +22,6 @@ from core_utils.pipeline import (
     UDPipeDocument,
     UnifiedCoNLLUDocument,
 )
-from core_utils.visualizer import visualize
 
 
 class InconsistentDatasetError(Exception):
