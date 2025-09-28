@@ -7,6 +7,10 @@
         {
             "name": "lab_6_pipeline",
             "coverage": 76
+        },
+        {
+            "name": "final_project",
+            "coverage": 0
         }
     ],
     "addons": [
@@ -33,7 +37,7 @@
             "EkaterinaKhomutova",
             "EIzharikov"
         ],
-        "pr_name_regex": "(Scraper|Pipeline|Final Project), \\w+ \\w+ - 2\\dFPL\\d",
-        "pr_name_example": "Scraper, Andrei Kashchikhin - 21FPL2 \nPipeline, Andrei Kashchikhin - 21FPL2"
+        "pr_name_regex": "(?:\\[PROJECT\\]\\s*)?(Scraper|Pipeline|Final Project), [\\w\\s\\d]+ \\w+ - 2\\dFPL\\d",
+        "pr_name_example": "Scraper, Andrei Kashchikhin - 21FPL2 \nPipeline, Andrei Kashchikhin - 21FPL2 \n[PROJECT] Final Project, Team 7 Mandelstamm - 22FPL2"
     }
 }
