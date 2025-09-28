@@ -28,55 +28,46 @@ from core_utils.constants import (
 )
 
 
-
-
 class IncorrectSeedURLError(Exception):
     """
     Raised when the seed URL is not written correctly in the configuration file.
     """
-    pass
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
     """
     Raised when the number of articles is too large in the configuration file.
     """
-    pass
 
 
 class IncorrectNumberOfArticlesError(Exception):
     """
     Raised when the number of articles is too small or not an integer in the configuration file.
     """
-    pass
 
 
 class IncorrectHeadersError(Exception):
     """
     Raised when the headers are not in a form of dictionary in the configuration file.
     """
-    pass
 
 
 class IncorrectEncodingError(Exception):
     """
     Raised when the encoding is not specified as a string in the configuration file.
     """
-    pass
 
 
 class IncorrectTimeoutError(Exception):
     """
     Raised when the timeout is too large or not a positive integer in the configuration file.
     """
-    pass
 
 
 class IncorrectVerifyError(Exception):
     """
     Raised when the verify certificate value is neither True nor False in the configuration file.
     """
-    pass
 
 
 class Config:
