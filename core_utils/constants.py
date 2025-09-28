@@ -1,5 +1,5 @@
 """
-Модуль содержит константы, используемые в проекте.
+Useful constant variables.
 """
 from pathlib import Path
 

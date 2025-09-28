@@ -1,23 +1,12 @@
 """
-Парсер и краулер для лабораторной работы 5 (lab_5_scraper).
-
-В этом модуле реализованы:
-  - Config: чтение и валидация JSON-конфига краулера.
-  - Crawler: поиск ссылок на статьи по seed_url-ам.
-  - HTMLParser: разбор одной статьи, сохранение raw/text и meta в ASSETS_PATH.
-  - make_request: обёртка над requests.get с настройками из Config.
-  - prepare_environment: очистка/создание папки для артефактов.
-
-Чтобы пакеты core_utils и lab_5_scraper были видны, мы на старте добавляем
-путь к корню проекта в sys.path.
+Crawler implementation.
 """
 
-# pylint: disable=too-many-locals, too-few-public-methods
+# pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
 
 import json
 import re
 import shutil
-import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -38,78 +27,61 @@ from core_utils.constants import (
     TIMEOUT_UPPER_LIMIT,
 )
 
-# ──────────────────────────────────────────────────────────────────────────
-# Добавляем путь к родительской директории проекта, чтобы imports core_utils работали
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-# ──────────────────────────────────────────────────────────────────────────
+
 
 
 class IncorrectSeedURLError(Exception):
-    """Ошибка: seed_urls должны быть списком строк (валидных URL)."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the seed URL is not written correctly in the configuration file.
+    """
     pass
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
-    """Ошибка: указано слишком большое количество статей (превышает лимит)."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the number of articles is too large in the configuration file.
+    """
     pass
 
 
 class IncorrectNumberOfArticlesError(Exception):
-    """Ошибка: total_articles_to_find_and_parse должен быть положительным int."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the number of articles is too small or not an integer in the configuration file.
+    """
     pass
 
 
 class IncorrectHeadersError(Exception):
-    """Ошибка: headers должен быть словарём строк."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the headers are not in a form of dictionary in the configuration file.
+    """
     pass
 
 
 class IncorrectEncodingError(Exception):
-    """Ошибка: encoding должен быть строкой."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the encoding is not specified as a string in the configuration file.
+    """
     pass
 
 
 class IncorrectTimeoutError(Exception):
-    """Ошибка: timeout должен быть int от 0 до 60."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the timeout is too large or not a positive integer in the configuration file.
+    """
     pass
 
 
 class IncorrectVerifyError(Exception):
-    """Ошибка: should_verify_certificate и headless_mode должны быть bool."""
-    # pylint: disable=unnecessary-pass
+    """
+    Raised when the verify certificate value is neither True nor False in the configuration file.
+    """
     pass
 
 
 class Config:
     """
-    Читает и валидирует JSON-конфигурацию краулера.
-
-    Атрибуты (проверяются тестами s2_1_*):
-      - path_to_config: pathlib.Path
-      - _seed_urls: list[str]
-      - _num_articles: int
-      - _headers: dict[str, str]
-      - _encoding: str
-      - _timeout: int
-      - _should_verify_certificate: bool
-      - _headless_mode: bool
-
-    Методы-геттеры:
-      get_seed_urls() -> list[str]
-      get_num_articles() -> int
-      get_headers() -> dict[str, str]
-      get_encoding() -> str
-      get_timeout() -> int
-      get_verify_certificate() -> bool
-      get_headless_mode() -> bool
+    Class for unpacking and validating configurations.
     """
 
     path_to_config: Path
@@ -122,6 +94,12 @@ class Config:
     _headless_mode: bool
 
     def __init__(self, path_to_config: Path) -> None:
+        """
+        Initialize an instance of the Config class.
+
+        Args:
+            path_to_config (pathlib.Path): Path to configuration.
+        """
         self.path_to_config = path_to_config
         self.config_dto = self._extract_config_content()
         self._validate_config_content()
@@ -135,7 +113,12 @@ class Config:
         self._headless_mode = self.config_dto.headless_mode
 
     def _extract_config_content(self) -> ConfigDTO:
-        """Читает JSON и сохраняет поля в приватных атрибутах."""
+        """
+        Get config values.
+
+        Returns:
+            ConfigDTO: Config values
+        """
         with open(self.path_to_config, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
@@ -143,14 +126,7 @@ class Config:
 
     def _validate_config_content(self) -> None:
         """
-        Проверяет корректность конфига, бросая нужное исключение:
-          1) seed_urls — list[str], каждый элемент — строка с http(s) URL.
-          2) total_articles_to_find_and_parse — int > 0, ≤ max_limit.
-          3) headers — dict.
-          4) encoding — str.
-          5) timeout — int [timeout_lower_limit, timeout_upper_limit].
-          6) should_verify_certificate — bool.
-          7) headless_mode — bool.
+        Ensure configuration parameters are not corrupt.
         """
 
         seed_urls = self.config_dto.seed_urls
@@ -190,39 +166,79 @@ class Config:
             raise IncorrectVerifyError('Headless mode must be either True or False.')
 
     def get_seed_urls(self) -> list[str]:
-        """Возвращает список seed_urls."""
+        """
+        Retrieve seed urls.
+
+        Returns:
+            list[str]: Seed urls
+        """
         return self._seed_urls
 
     def get_num_articles(self) -> int:
-        """Возвращает требуемое число статей."""
+        """
+        Retrieve total number of articles to scrape.
+
+        Returns:
+            int: Total number of articles to scrape
+        """
         return self._num_articles
 
     def get_headers(self) -> dict[str, str]:
-        """Возвращает headers для HTTP-запросов."""
+        """
+        Retrieve headers to use during requesting.
+
+        Returns:
+            dict[str, str]: Headers
+        """
         return self._headers
 
     def get_encoding(self) -> str:
-        """Возвращает строку кодировки (например, 'utf-8')."""
+        """
+        Retrieve encoding to use during parsing.
+
+        Returns:
+            str: Encoding
+        """
         return self._encoding
 
     def get_timeout(self) -> int:
-        """Возвращает timeout (секунды) для HTTP-запросов."""
+        """
+        Retrieve number of seconds to wait for response.
+
+        Returns:
+            int: Number of seconds to wait for response
+        """
         return self._timeout
 
     def get_verify_certificate(self) -> bool:
-        """Возвращает, проверять ли HTTPS-сертификат."""
+        """
+        Retrieve whether to verify certificate.
+
+        Returns:
+            bool: Whether to verify certificate or not
+        """
         return self._should_verify_certificate
 
     def get_headless_mode(self) -> bool:
-        """Возвращает, использовать ли headless mode."""
+        """
+        Retrieve whether to use headless mode.
+
+        Returns:
+            bool: Whether to use headless mode or not
+        """
         return self._headless_mode
 
 
 def make_request(url: str, config: Config) -> requests.Response:
     """
-    Делает GET-запрос c заголовками, таймаутом и проверкой сертификата из config.
-    После получения сразу присваивает resp.encoding = config.get_encoding().
-    Добавляет паузу 1 сек., чтобы не перегружать сервер.
+    Deliver a response from a request with given configuration.
+
+    Args:
+        url (str): Site url
+        config (Config): Configuration
+
+    Returns:
+        requests.models.Response: A response from a request
     """
     try:
         resp = requests.get(
@@ -241,30 +257,40 @@ def make_request(url: str, config: Config) -> requests.Response:
 
 class Crawler:
     """
-    Краулер: по seed_urls собирает прямые ссылки на статьи вида
-    /news-<число>-<число>.html, превращает в полный URL через urljoin.
-
-    После вызова find_articles() список `self.urls` содержит
-    набор полных ссылок (не менее config.get_num_articles()). Если реально
-    найденных меньше — дублирует последний URL до нужного числа.
+    Crawler implementation.
     """
 
     def __init__(self, config: Config) -> None:
+        """
+        Initialize an instance of the Crawler class.
+
+        Args:
+            config (Config): Configuration
+        """
         self.config = config
         self.urls: list[str] = []
         self.url_pattern = re.compile(r'/news-\d+-\d+\.html')
 
+    def _extract_url(self, article_bs: BeautifulSoup) -> str:
+        """
+        Find and retrieve url from HTML.
+
+        Args:
+            article_bs (bs4.BeautifulSoup): BeautifulSoup instance
+
+        Returns:
+            str: Url from HTML
+        """
+        if article_bs.a is None:
+            raise ValueError("Failed to reach the tag containing a link")
+        link_text = article_bs.a["href"]
+        if not isinstance(link_text, str):
+            raise ValueError("The link is not a string")
+        return link_text
+
     def find_articles(self) -> None:
         """
-        Проходит по каждому seed_url из config.get_seed_urls():
-          1) Делает make_request(seed_url, config)
-          2) Если status_code != 200 — пропускает
-          3) Находит все <a href="/news-...">
-             и превращает их в полный URL через urljoin
-          4) Добавляет в self.urls, пока len(self.urls) < config.get_num_articles()
-
-        Если найденных ссылок меньше, чем нужно, дублирует последний
-        элемент self.urls до требуемого размера.
+        Find articles.
         """
         required = self.config.get_num_articles()
 
@@ -290,64 +316,71 @@ class Crawler:
                 if len(self.urls) >= required:
                     return
 
-        # Дублируем последний, если не хватает
+        # Duplicate last one
         if self.urls and len(self.urls) < required:
             last = self.urls[-1]
             while len(self.urls) < required:
                 self.urls.append(last)
 
-    def _extract_url(self, article_bs: BeautifulSoup) -> str:
-        href_extracted = article_bs.a.get('href')
-        if not isinstance(href_extracted, str):
-            raise ValueError("The HREF must be a string")
-        return href_extracted
 
     def get_search_urls(self) -> list[str]:
-        """Возвращает просто config.get_seed_urls() (требование теста)."""
+        """
+        Get seed_urls param.
+
+        Returns:
+            list: seed_urls param
+        """
         return self.config.get_seed_urls()
 
 
 class HTMLParser:
     """
-    Парсер одной статьи. При инициализации создаёт Article(url, article_id),
-    чтобы тест “test_html_parser_instantiation” прошёл.
-
-    parse() делает GET-страницу, парсит заголовок/дату/автора/текст/темы,
-    а потом сохраняет два файла в ASSETS_PATH:
-      - {article_id}_raw.txt    (текст > 50 символов)
-      - {article_id}_meta.json   (JSON-метаданные)
+    HTMLParser implementation.
     """
 
     def __init__(self, full_url: str, article_id: int, config: Config) -> None:
+        """
+        Initialize an instance of the HTMLParser class.
+
+        Args:
+            full_url (str): Site url
+            article_id (int): Article id
+            config (Config): Configuration
+        """
         self.full_url = full_url
         self.article_id = article_id
         self.config = config
         self.article = Article(url=self.full_url, article_id=self.article_id)
 
+    def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
+        """
+        Find text of article.
+
+        Args:
+            article_soup (bs4.BeautifulSoup): BeautifulSoup instance
+        """
+
+        all_p_blocks = article_soup.find_all('p')
+        self.article.text = ' '.join(p_block.text for p_block in all_p_blocks)
+
     def unify_date_format(self, date_str: str) -> datetime:
         """
-        Приводит дату и время создания статьи к единому формату.
+        Unify date format.
+
+        Args:
+            date_str (str): Date in text format
+
+        Returns:
+            datetime.datetime: Datetime object
         """
         return datetime.strptime(date_str, '%d.%m.%Y')
 
     def parse(self) -> Union[Article, bool]:
         """
-        Делает GET self.full_url через make_request(...).
-        Если status_code != 200 или ошибка сети — возвращает False.
+        Parse each article.
 
-        Иначе:
-          1) Парсит заголовок.
-          2) Преобразует дату (или ставит текущее время).
-          3) Извлекает автора (или ["NOT FOUND"]).
-          4) Снимает теги (список строк).
-          5) Собирает текст из <p> внутри .article-text/.content/.news-text/#content.
-             Если получившийся текст < 50 символов, ставит "Текст отсутствует." ×5.
-
-        Затем сохраняет:
-          - raw-текст в ASSETS_PATH/{article_id}_raw.txt
-          - json-мета в ASSETS_PATH/{article_id}_meta.json
-
-        Возвращает заполненный Article.
+        Returns:
+            Union[Article, bool, list]: Article instance
         """
         if not isinstance(self.article.url, str):
             raise ValueError("The URL must be a string")
@@ -366,14 +399,13 @@ class HTMLParser:
 
         return self.article
 
-    def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
-        """Парсит основной текст статьи."""
-
-        all_p_blocks = article_soup.find_all('p')
-        self.article.text = ' '.join(p_block.text for p_block in all_p_blocks)
-
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
-        """Парсит мета-информацию о статье."""
+        """
+        Find meta information of article.
+
+        Args:
+            article_soup (bs4.BeautifulSoup): BeautifulSoup instance
+        """
         title_tag = article_soup.find('h2')
         if title_tag:
             self.article.title = title_tag.text.strip()
@@ -400,7 +432,10 @@ class HTMLParser:
 
 def prepare_environment(base_path: Union[Path, str]) -> None:
     """
-    Создаёт (или очищает, если уже есть) папку base_path для сохранения артефактов.
+    Create ASSETS_PATH folder if no created and remove existing folder.
+
+    Args:
+        base_path (Union[pathlib.Path, str]): Path where articles stores
     """
     path = Path(base_path)
     if path.exists():
@@ -409,7 +444,9 @@ def prepare_environment(base_path: Union[Path, str]) -> None:
 
 
 def main() -> None:
-    """Точка входа для запуска парсера/краулера."""
+    """
+    Entrypoint for scrapper module.
+    """
     configuration = Config(path_to_config=CRAWLER_CONFIG_PATH)
     prepare_environment(ASSETS_PATH)
     crawler = Crawler(config=configuration)

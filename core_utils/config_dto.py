@@ -3,7 +3,6 @@
 ConfigDTO class implementation: stores the configuration information.
 """
 
-# Убрали второе определение класса, оставили единственную версию
 
 class ConfigDTO:
     """
