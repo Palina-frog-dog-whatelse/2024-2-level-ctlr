@@ -152,7 +152,7 @@ class UDPipeAnalyzer(LibraryWrapper):
             AbstractCoNLLUAnalyzer: Analyzer instance
         """
         model_path = str(
-            PROJECT_ROOT / "lab_6_pipeline" / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe")
+            "C:/Users/Полина/OneDrive/Рабочий стол/kili/2024-2-level-ctlr" / "lab_6_pipeline" / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe")
         ru = spacy_udpipe.load_from_path("ru", model_path)
         if ru is None:
             raise FileNotFoundError(f"UDPipe model not found at {model_path}. Download it and place there.")
