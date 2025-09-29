@@ -7,7 +7,7 @@ import pathlib
 
 import spacy_udpipe
 from networkx import DiGraph
-
+from pathlib import Path
 from core_utils.article import io
 from core_utils.article.article import Article, ArtifactType
 from core_utils.constants import ASSETS_PATH, PROJECT_ROOT
@@ -151,8 +151,11 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             AbstractCoNLLUAnalyzer: Analyzer instance
         """
-        model_path = str(
-            "C:/Users/Полина/OneDrive/Рабочий стол/kili/2024-2-level-ctlr" / "lab_6_pipeline" / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe")
+        base_path = Path(r"C:/Users/Полина/OneDrive/Рабочий стол/kili/2024-2-level-ctlr")
+        full_path = base_path / "lab_6_pipeline" / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe"
+
+        model_path = str(full_path)
+
         ru = spacy_udpipe.load_from_path("ru", model_path)
         if ru is None:
             raise FileNotFoundError(f"UDPipe model not found at {model_path}. Download it and place there.")
