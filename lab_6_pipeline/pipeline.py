@@ -109,7 +109,7 @@ class TextProcessingPipeline(PipelineProtocol):
             analyzer (LibraryWrapper | None): Analyzer instance
         """
         self._corpus = corpus_manager
-        self.analyzer = analyzer
+        self.analyzer = analyzer if analyzer is not None else UDPipeAnalyzer()
 
     def run(self) -> None:
         """
@@ -119,11 +119,15 @@ class TextProcessingPipeline(PipelineProtocol):
         article_texts = []
         for current_article in retrieved_articles.values():
             article_texts.append(current_article.text)
-        preprocessed_texts = self.analyzer.analyze(article_texts)
+        preprocessed_texts = None
+        if self.analyzer is not None:
+            preprocessed_texts = self.analyzer.analyze(article_texts)
         for article_id, article in retrieved_articles.items():
             io.to_cleaned(article)
-            article.set_conllu_info(preprocessed_texts[article_id-1])
-            self.analyzer.to_conllu(article)
+            if preprocessed_texts is not None and (article_id - 1) < len(preprocessed_texts):
+                article.set_conllu_info(preprocessed_texts[article_id - 1])
+            if self.analyzer is not None:
+                self.analyzer.to_conllu(article)
 
 
 class UDPipeAnalyzer(LibraryWrapper):
