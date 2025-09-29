@@ -151,11 +151,11 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             AbstractCoNLLUAnalyzer: Analyzer instance
         """
-        ru = spacy_udpipe.load_from_path(
-            "ru",
-            str(PROJECT_ROOT / "lab_6_pipeline" / "assets" / "model" /
-                "russian-syntagrus-ud-2.0-170801.udpipe")
-        )
+        model_path = str(
+            PROJECT_ROOT / "lab_6_pipeline" / "assets" / "model" / "russian-syntagrus-ud-2.0-170801.udpipe")
+        ru = spacy_udpipe.load_from_path("ru", model_path)
+        if ru is None:
+            raise FileNotFoundError(f"UDPipe model not found at {model_path}. Download it and place there.")
         ru.add_pipe(
             "conll_formatter",
             last=True,
