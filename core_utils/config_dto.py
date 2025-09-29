@@ -30,7 +30,6 @@ class ConfigDTO:
     #: Require headless mode or not
     headless_mode: bool
 
-class ConfigDTO:
     def __init__(
         self,
         seed_urls: list,
