@@ -3,12 +3,11 @@ Crawler implementation.
 """
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
-
+import datetime
 import json
 import re
 import shutil
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Union
 from urllib.parse import urljoin
@@ -387,7 +386,7 @@ class HTMLParser:
         Returns:
             datetime.datetime: Datetime object
         """
-        return datetime.strptime(date_str, '%d.%m.%Y')
+        return datetime.datetime.strptime(date_str, '%d.%m.%Y')
 
     def parse(self) -> Union[Article, bool, list]:
         """
