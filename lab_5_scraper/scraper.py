@@ -74,7 +74,6 @@ class Config:
     Class for unpacking and validating configurations.
     """
 
-    path_to_config: Path
 
     def __init__(self, path_to_config: Path) -> None:
         """
