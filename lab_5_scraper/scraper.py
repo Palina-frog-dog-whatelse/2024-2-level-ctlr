@@ -76,13 +76,6 @@ class Config:
     """
 
     path_to_config: Path
-    _seed_urls: list[str]
-    _num_articles: int
-    _headers: dict[str, str]
-    _encoding: str
-    _timeout: int
-    _should_verify_certificate: bool
-    _headless_mode: bool
 
     def __init__(self, path_to_config: Path) -> None:
         """
