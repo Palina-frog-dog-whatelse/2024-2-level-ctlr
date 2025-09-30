@@ -5,11 +5,12 @@ Crawler implementation.
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable, unused-argument
 import datetime
 import json
+import pathlib
 import re
 import shutil
 import time
 from pathlib import Path
-from typing import Union
+from typing import Pattern, Union
 from urllib.parse import urljoin
 
 import requests
@@ -75,7 +76,7 @@ class Config:
     """
 
 
-    def __init__(self, path_to_config: Path) -> None:
+    def __init__(self, path_to_config: pathlib.Path) -> None:
         """
         Initialize an instance of the Config class.
 
@@ -242,6 +243,9 @@ class Crawler:
     Crawler implementation.
     """
 
+    #: Url pattern
+    url_pattern: Union[Pattern, str]
+
     def __init__(self, config: Config) -> None:
         """
         Initialize an instance of the Crawler class.
@@ -305,7 +309,7 @@ class Crawler:
                 self.urls.append(last)
 
 
-    def get_search_urls(self) -> list[str]:
+    def get_search_urls(self) -> list:
         """
         Get seed_urls param.
 
@@ -412,7 +416,7 @@ class HTMLParser:
         return self.article
 
 
-def prepare_environment(base_path: Union[Path, str]) -> None:
+def prepare_environment(base_path: Union[pathlib.Path, str]) -> None:
     """
     Create ASSETS_PATH folder if no created and remove existing folder.
 
@@ -443,5 +447,5 @@ def main() -> None:
         io.to_meta(article)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
