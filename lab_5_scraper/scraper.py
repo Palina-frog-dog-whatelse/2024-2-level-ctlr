@@ -213,7 +213,7 @@ class Config:
         return self._headless_mode
 
 
-def make_request(url: str, config: Config) -> requests.Response:
+def make_request(url: str, config: Config) -> requests.models.Response:
     """
     Deliver a response from a request with given configuration.
 
@@ -347,42 +347,6 @@ class HTMLParser:
         all_p_blocks = article_soup.find_all('p')
         self.article.text = ' '.join(p_block.text for p_block in all_p_blocks)
 
-    def unify_date_format(self, date_str: str) -> datetime:
-        """
-        Unify date format.
-
-        Args:
-            date_str (str): Date in text format
-
-        Returns:
-            datetime.datetime: Datetime object
-        """
-        return datetime.strptime(date_str, '%d.%m.%Y')
-
-    def parse(self) -> Union[Article, bool]:
-        """
-        Parse each article.
-
-        Returns:
-            Union[Article, bool, list]: Article instance
-        """
-        if not isinstance(self.article.url, str):
-            raise ValueError("The URL must be a string")
-        try:
-            response = make_request(self.article.url, self.config)
-        except requests.RequestException:
-            return False
-
-        if response.status_code != 200:
-            return False
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        self._fill_article_with_text(soup)
-        self._fill_article_with_meta_information(soup)
-
-        return self.article
-
     def _fill_article_with_meta_information(self, article_soup: BeautifulSoup) -> None:
         """
         Find meta information of article.
@@ -412,6 +376,42 @@ class HTMLParser:
             found_author = True
         if not found_author:
             self.article.author.append('NOT FOUND')
+
+    def unify_date_format(self, date_str: str) -> datetime.datetime:
+        """
+        Unify date format.
+
+        Args:
+            date_str (str): Date in text format
+
+        Returns:
+            datetime.datetime: Datetime object
+        """
+        return datetime.strptime(date_str, '%d.%m.%Y')
+
+    def parse(self) -> Union[Article, bool, list]:
+        """
+        Parse each article.
+
+        Returns:
+            Union[Article, bool, list]: Article instance
+        """
+        if not isinstance(self.article.url, str):
+            raise ValueError("The URL must be a string")
+        try:
+            response = make_request(self.article.url, self.config)
+        except requests.RequestException:
+            return False
+
+        if response.status_code != 200:
+            return False
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        self._fill_article_with_text(soup)
+        self._fill_article_with_meta_information(soup)
+
+        return self.article
 
 
 def prepare_environment(base_path: Union[Path, str]) -> None:
