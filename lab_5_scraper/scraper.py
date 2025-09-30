@@ -363,7 +363,7 @@ class HTMLParser:
         if date_tag:
             self.article.date = self.unify_date_format(date_tag.text.strip())
         else:
-            self.article.date = datetime.now()
+            self.article.date = datetime.datetime.now()
 
         author_tags = article_soup.find_all('p', align='right')
         found_author = False
